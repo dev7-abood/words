@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Pronunciation Table</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-10">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Word Pronunciation Table</h1>
+    <div class="w-full max-w-4xl overflow-x-auto shadow-md rounded-lg">
+        <table class="table-auto w-full bg-white border border-gray-200 rounded-lg">
+            <thead>
+                <tr class="bg-blue-500 text-white">
+                    <th class="py-3 px-4 text-left">Word 1</th>
+                    <th class="py-3 px-4 text-left">Word 2</th>
+                    <th class="py-3 px-4 text-left">Word 3</th>
+                    <th class="py-3 px-4 text-left">Word 4</th>
+                </tr>
+            </thead>
+            <tbody id="wordTableBody" class="divide-y divide-gray-200">
+                <!-- Rows will be dynamically inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Load available voices for text-to-speech
+        let voices = [];
+
+        function loadVoices() {
+            voices = window.speechSynthesis.getVoices();
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        function pronounceWord(word) {
+            const utterance = new SpeechSynthesisUtterance(word);
+
+            // Select a female voice (if available)
+            const femaleVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('woman'));
+            if (femaleVoice) {
+                utterance.voice = femaleVoice;
+            }
+
+            // Adjust pitch and rate for natural tone
+            utterance.pitch = 1.2;
+            utterance.rate = 1;
+
+            // Speak the word
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Function to dynamically populate the table
+        function populateTable(words) {
+            const tableBody = document.getElementById('wordTableBody');
+            tableBody.innerHTML = ''; // Clear any existing rows
+
+            // Split the words into rows of 4 columns
+            for (let i = 0; i < words.length; i += 4) {
+                const row = document.createElement('tr');
+
+                for (let j = i; j < i + 4; j++) {
+                    const cell = document.createElement('td');
+                    cell.className = "py-3 px-4 text-gray-700";
+
+                    if (words[j]) {
+                        cell.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <span>${words[j]}</span>
+                                <button onclick="pronounceWord('${words[j]}')" class="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600">
+                                    Pronounce
+                                </button>
+                            </div>
+                        `;
+                    }
+                    row.appendChild(cell);
+                }
+
+                tableBody.appendChild(row);
+            }
+        }
+
+        // Load words from the JSON file
+        fetch('words.json') // Replace with the correct path to your JSON file
+            .then(response => response.json())
+            .then(data => {
+                const words = data.words; // Assuming JSON structure: { "words": ["word1", "word2", ...] }
+                populateTable(words);
+            })
+            .catch(error => console.error('Error loading JSON:', error));
+    </script>
+</body>
+</html>
