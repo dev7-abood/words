@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center py-10">
-    <h1 class="text-3xl font-bold mb-6 text-gray-800">Word Pronunciation Tables</h1>
-    <div id="tablesContainer" class="space-y-10">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800 text-center px-4">Word Pronunciation Tables</h1>
+    <div id="tablesContainer" class="space-y-10 w-full px-4">
         <!-- Tables will be dynamically inserted here -->
     </div>
 
@@ -84,23 +84,32 @@
 
         function createTable(words, startIndex, blockNumber) {
             const container = document.createElement('div');
-            container.className = "w-full max-w-4xl mx-auto overflow-x-auto shadow-md rounded-lg";
+            container.className = "w-full max-w-4xl mx-auto shadow-md rounded-lg bg-white p-4";
+
+            // Add a large input box above the table
+            const inputBox = document.createElement('textarea');
+            inputBox.placeholder = `Write something for Block ${blockNumber}...`;
+            inputBox.className = "w-full h-20 p-3 mb-4 border rounded-lg focus:ring focus:ring-blue-300 focus:outline-none";
+            container.appendChild(inputBox);
 
             // Add the table
+            const tableWrapper = document.createElement('div');
+            tableWrapper.className = "overflow-x-auto";
             const table = document.createElement('table');
-            table.className = "table-auto w-full bg-white border border-gray-200 rounded-lg";
+            table.className = "table-auto w-full border border-gray-200 rounded-lg text-sm md:text-base";
             table.innerHTML = `
                 <thead>
                     <tr class="bg-blue-500 text-white">
-                        <th class="py-3 px-4 text-left">Word 1</th>
-                        <th class="py-3 px-4 text-left">Word 2</th>
-                        <th class="py-3 px-4 text-left">Word 3</th>
-                        <th class="py-3 px-4 text-left">Word 4</th>
+                        <th class="py-3 px-2 md:px-4 text-left">Word 1</th>
+                        <th class="py-3 px-2 md:px-4 text-left">Word 2</th>
+                        <th class="py-3 px-2 md:px-4 text-left">Word 3</th>
+                        <th class="py-3 px-2 md:px-4 text-left">Word 4</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                 </tbody>
             `;
+            tableWrapper.appendChild(table);
 
             const tableBody = table.querySelector('tbody');
             const highlightedWords = JSON.parse(localStorage.getItem('highlightedWords')) || [];
@@ -109,7 +118,7 @@
                 const row = document.createElement('tr');
                 for (let j = i; j < i + 4; j++) {
                     const cell = document.createElement('td');
-                    cell.className = "py-3 px-4 text-gray-700";
+                    cell.className = "py-3 px-2 md:px-4 text-gray-700";
                     if (words[j]) {
                         const isHighlighted = highlightedWords.includes(words[j]);
                         cell.innerHTML = `
@@ -138,7 +147,7 @@
             footer.className = "text-sm text-gray-500 mt-2 text-center";
             footer.innerHTML = `#Block ${blockNumber} - Words ${startIndex + 1} to ${startIndex + words.length}`;
             
-            container.appendChild(table);
+            container.appendChild(tableWrapper);
             container.appendChild(pronounceButton);
             container.appendChild(footer);
 
@@ -149,8 +158,8 @@
             const tablesContainer = document.getElementById('tablesContainer');
             tablesContainer.innerHTML = ''; // Clear any existing tables
 
-            for (let i = 0; i < words.length; i += 50) {
-                const table = createTable(words.slice(i, i + 50), i, i / 50 + 1);
+            for (let i = 0; i < words.length; i += 100) {
+                const table = createTable(words.slice(i, i + 100), i, i / 100 + 1);
                 tablesContainer.appendChild(table);
             }
         }
