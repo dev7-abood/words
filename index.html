@@ -82,6 +82,27 @@
         highlightAndPronounceNextWord();
     }
 
+    function highlightMatchingWords(input, tableBody) {
+        const searchText = input.value.trim().toLowerCase(); // Get the input text
+        const words = tableBody.querySelectorAll('span'); // Get all table word elements
+
+        words.forEach(wordElement => {
+            const wordText = wordElement.textContent.trim().toLowerCase();
+
+            // Add or remove highlight
+            if (wordText.includes(searchText) && searchText.length > 0) {
+                wordElement.classList.add('bg-yellow-400', 'font-bold'); // Highlight and emphasize
+            } else {
+                wordElement.classList.remove('bg-yellow-400', 'font-bold'); // Remove highlight
+            }
+        });
+    }
+
+    // Attach the event listener for dynamic highlighting
+    function attachHighlightingEvent(inputBox, tableBody) {
+        inputBox.addEventListener('input', () => highlightMatchingWords(inputBox, tableBody));
+    }
+
     function createTable(words, startIndex, blockNumber) {
         const container = document.createElement('div');
         container.className = "w-full max-w-4xl mx-auto shadow-md rounded-lg bg-white p-4";
@@ -155,17 +176,17 @@
         container.appendChild(pronounceButton);
         container.appendChild(footer);
 
+        attachHighlightingEvent(inputBox, tableBody);
+
         return container;
     }
-
-
 
     function populateTables(words) {
         const tablesContainer = document.getElementById('tablesContainer');
         tablesContainer.innerHTML = ''; // Clear any existing tables
 
-        for (let i = 0; i < words.length; i += 40) {
-            const table = createTable(words.slice(i, i + 40), i, i / 40 + 1);
+        for (let i = 0; i < words.length; i += 20) {
+            const table = createTable(words.slice(i, i + 20), i, i / 20 + 1);
             tablesContainer.appendChild(table);
         }
     }
