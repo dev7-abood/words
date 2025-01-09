@@ -7,170 +7,176 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center py-10">
-    <h1 class="text-3xl font-bold mb-6 text-gray-800 text-center px-4">Word Pronunciation Tables</h1>
-    <div id="tablesContainer" class="space-y-10 w-full px-4">
-        <!-- Tables will be dynamically inserted here -->
-    </div>
+<h1 class="text-3xl font-bold mb-6 text-gray-800 text-center px-4">Word Pronunciation Tables</h1>
+<div id="tablesContainer" class="space-y-10 w-full px-4">
+    <!-- Tables will be dynamically inserted here -->
+</div>
 
-    <script>
-        let voices = [];
+<script>
+    let voices = [];
 
-        function loadVoices() {
-            voices = window.speechSynthesis.getVoices();
+    function loadVoices() {
+        voices = window.speechSynthesis.getVoices();
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    function pronounceWord(word, callback) {
+        const utterance = new SpeechSynthesisUtterance(word);
+        const femaleVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('woman'));
+        if (femaleVoice) {
+            utterance.voice = femaleVoice;
+        }
+        utterance.pitch = 1.2;
+        utterance.rate = 1;
+        utterance.onend = callback; // Call the callback after the word is pronounced
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function toggleHighlight(wordElement, word) {
+        const highlightedWords = JSON.parse(localStorage.getItem('highlightedWords')) || [];
+
+        if (wordElement.classList.contains('bg-yellow-300')) {
+            // Remove highlight
+            wordElement.classList.remove('bg-yellow-300');
+            const index = highlightedWords.indexOf(word);
+            if (index !== -1) highlightedWords.splice(index, 1); // Remove from localStorage
+        } else {
+            // Add highlight
+            wordElement.classList.add('bg-yellow-300');
+            if (!highlightedWords.includes(word)) highlightedWords.push(word); // Add to localStorage
         }
 
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
+        // Update localStorage
+        localStorage.setItem('highlightedWords', JSON.stringify(highlightedWords));
+    }
 
-        function pronounceWord(word, callback) {
-            const utterance = new SpeechSynthesisUtterance(word);
-            const femaleVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('woman'));
-            if (femaleVoice) {
-                utterance.voice = femaleVoice;
-            }
-            utterance.pitch = 1.2;
-            utterance.rate = 1;
-            utterance.onend = callback; // Call the callback after the word is pronounced
-            window.speechSynthesis.speak(utterance);
-        }
+    function startPronouncing(rows) {
+        let currentRowIndex = 0;
+        let currentWordIndex = 0;
 
-        function toggleHighlight(wordElement, word) {
-            const highlightedWords = JSON.parse(localStorage.getItem('highlightedWords')) || [];
+        function highlightAndPronounceNextWord() {
+            if (currentRowIndex >= rows.length) return; // Stop if all rows are done
 
-            if (wordElement.classList.contains('bg-yellow-300')) {
-                // Remove highlight
-                wordElement.classList.remove('bg-yellow-300');
-                const index = highlightedWords.indexOf(word);
-                if (index !== -1) highlightedWords.splice(index, 1); // Remove from localStorage
+            const row = rows[currentRowIndex];
+            const words = row.querySelectorAll('span');
+
+            if (currentWordIndex < words.length) {
+                const wordElement = words[currentWordIndex];
+                wordElement.classList.add('bg-yellow-300'); // Highlight current word
+
+                pronounceWord(wordElement.textContent, () => {
+                    wordElement.classList.remove('bg-yellow-300'); // Remove highlight after pronunciation
+                    currentWordIndex++;
+                    highlightAndPronounceNextWord(); // Move to the next word
+                });
             } else {
-                // Add highlight
-                wordElement.classList.add('bg-yellow-300');
-                if (!highlightedWords.includes(word)) highlightedWords.push(word); // Add to localStorage
+                currentWordIndex = 0; // Reset word index for the next row
+                currentRowIndex++;
+                highlightAndPronounceNextWord(); // Move to the next row
             }
-
-            // Update localStorage
-            localStorage.setItem('highlightedWords', JSON.stringify(highlightedWords));
         }
 
-        function startPronouncing(rows) {
-            let currentRowIndex = 0;
-            let currentWordIndex = 0;
+        highlightAndPronounceNextWord();
+    }
 
-            function highlightAndPronounceNextWord() {
-                if (currentRowIndex >= rows.length) return; // Stop if all rows are done
+    function createTable(words, startIndex, blockNumber) {
+        const container = document.createElement('div');
+        container.className = "w-full max-w-4xl mx-auto shadow-md rounded-lg bg-white p-4";
 
-                const row = rows[currentRowIndex];
-                const words = row.querySelectorAll('span');
+        // Add a large input box above the table
+        const inputBox = document.createElement('textarea');
+        inputBox.placeholder = `Write something for Block ${blockNumber}...`;
+        inputBox.className = "w-full h-20 p-3 mb-4 border rounded-lg focus:ring focus:ring-blue-300 focus:outline-none";
+        container.appendChild(inputBox);
 
-                if (currentWordIndex < words.length) {
-                    const wordElement = words[currentWordIndex];
-                    wordElement.classList.add('bg-yellow-300'); // Highlight current word
+        // Add the table
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = "overflow-x-auto";
+        const table = document.createElement('table');
+        table.className = "table-auto w-full border border-gray-200 rounded-lg text-sm md:text-base";
+        table.innerHTML = `
+            <thead>
+                <tr class="bg-blue-500 text-white">
+                    <th class="py-3 px-2 md:px-4 text-left">Word 1</th>
+                    <th class="py-3 px-2 md:px-4 text-left">Word 2</th>
+                    <th class="py-3 px-2 md:px-4 text-left">Word 3</th>
+                    <th class="py-3 px-2 md:px-4 text-left">Word 4</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+            </tbody>
+        `;
+        tableWrapper.appendChild(table);
 
-                    pronounceWord(wordElement.textContent, () => {
-                        wordElement.classList.remove('bg-yellow-300'); // Remove highlight after pronunciation
-                        currentWordIndex++;
-                        highlightAndPronounceNextWord(); // Move to the next word
-                    });
-                } else {
-                    currentWordIndex = 0; // Reset word index for the next row
-                    currentRowIndex++;
-                    highlightAndPronounceNextWord(); // Move to the next row
+        const tableBody = table.querySelector('tbody');
+        const highlightedWords = JSON.parse(localStorage.getItem('highlightedWords')) || [];
+
+        for (let i = 0; i < words.length; i += 4) {
+            const row = document.createElement('tr');
+            for (let j = i; j < i + 4; j++) {
+                const cell = document.createElement('td');
+                cell.className = "py-3 px-2 md:px-4 text-gray-700";
+                if (words[j]) {
+                    const isHighlighted = highlightedWords.includes(words[j]);
+                    cell.innerHTML = `
+                        <div class="flex items-center justify-start space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6 cursor-pointer text-blue-500 hover:text-blue-700"
+                                 onclick="pronounceWord('${words[j]}')">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46" />
+                            </svg>
+                            <span
+                                class="cursor-pointer ${isHighlighted ? 'bg-yellow-300' : ''}"
+                                onclick="toggleHighlight(this, '${words[j]}')">
+                                ${words[j]}
+                            </span>
+                        </div>
+                    `;
                 }
+                row.appendChild(cell);
             }
-
-            highlightAndPronounceNextWord();
+            tableBody.appendChild(row);
         }
 
-        function createTable(words, startIndex, blockNumber) {
-            const container = document.createElement('div');
-            container.className = "w-full max-w-4xl mx-auto shadow-md rounded-lg bg-white p-4";
+        // Add a "Start Pronunciation" button below the table
+        const pronounceButton = document.createElement('button');
+        pronounceButton.textContent = "Start Pronunciation";
+        pronounceButton.className = "bg-green-500 text-white px-4 py-2 mt-4 rounded hover:bg-green-600 block mx-auto";
+        pronounceButton.onclick = () => startPronouncing(tableBody.querySelectorAll('tr'));
 
-            // Add a large input box above the table
-            const inputBox = document.createElement('textarea');
-            inputBox.placeholder = `Write something for Block ${blockNumber}...`;
-            inputBox.className = "w-full h-20 p-3 mb-4 border rounded-lg focus:ring focus:ring-blue-300 focus:outline-none";
-            container.appendChild(inputBox);
+        // Add footer below table with block count and word range
+        const footer = document.createElement('p');
+        footer.className = "text-sm text-gray-500 mt-2 text-center";
+        footer.innerHTML = `#Block ${blockNumber} - Words ${startIndex + 1} to ${startIndex + words.length}`;
 
-            // Add the table
-            const tableWrapper = document.createElement('div');
-            tableWrapper.className = "overflow-x-auto";
-            const table = document.createElement('table');
-            table.className = "table-auto w-full border border-gray-200 rounded-lg text-sm md:text-base";
-            table.innerHTML = `
-                <thead>
-                    <tr class="bg-blue-500 text-white">
-                        <th class="py-3 px-2 md:px-4 text-left">Word 1</th>
-                        <th class="py-3 px-2 md:px-4 text-left">Word 2</th>
-                        <th class="py-3 px-2 md:px-4 text-left">Word 3</th>
-                        <th class="py-3 px-2 md:px-4 text-left">Word 4</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                </tbody>
-            `;
-            tableWrapper.appendChild(table);
+        container.appendChild(tableWrapper);
+        container.appendChild(pronounceButton);
+        container.appendChild(footer);
 
-            const tableBody = table.querySelector('tbody');
-            const highlightedWords = JSON.parse(localStorage.getItem('highlightedWords')) || [];
+        return container;
+    }
 
-            for (let i = 0; i < words.length; i += 4) {
-                const row = document.createElement('tr');
-                for (let j = i; j < i + 4; j++) {
-                    const cell = document.createElement('td');
-                    cell.className = "py-3 px-2 md:px-4 text-gray-700";
-                    if (words[j]) {
-                        const isHighlighted = highlightedWords.includes(words[j]);
-                        cell.innerHTML = `
-                            <div class="flex items-center justify-between">
-                                <span 
-                                    class="cursor-pointer ${isHighlighted ? 'bg-yellow-300' : ''}" 
-                                    onclick="toggleHighlight(this, '${words[j]}')">
-                                    ${words[j]}
-                                </span>
-                            </div>
-                        `;
-                    }
-                    row.appendChild(cell);
-                }
-                tableBody.appendChild(row);
-            }
 
-            // Add a "Start Pronunciation" button below the table
-            const pronounceButton = document.createElement('button');
-            pronounceButton.textContent = "Start Pronunciation";
-            pronounceButton.className = "bg-green-500 text-white px-4 py-2 mt-4 rounded hover:bg-green-600 block mx-auto";
-            pronounceButton.onclick = () => startPronouncing(tableBody.querySelectorAll('tr'));
 
-            // Add footer below table with block count and word range
-            const footer = document.createElement('p');
-            footer.className = "text-sm text-gray-500 mt-2 text-center";
-            footer.innerHTML = `#Block ${blockNumber} - Words ${startIndex + 1} to ${startIndex + words.length}`;
-            
-            container.appendChild(tableWrapper);
-            container.appendChild(pronounceButton);
-            container.appendChild(footer);
+    function populateTables(words) {
+        const tablesContainer = document.getElementById('tablesContainer');
+        tablesContainer.innerHTML = ''; // Clear any existing tables
 
-            return container;
+        for (let i = 0; i < words.length; i += 40) {
+            const table = createTable(words.slice(i, i + 40), i, i / 40 + 1);
+            tablesContainer.appendChild(table);
         }
+    }
 
-        function populateTables(words) {
-            const tablesContainer = document.getElementById('tablesContainer');
-            tablesContainer.innerHTML = ''; // Clear any existing tables
-
-            for (let i = 0; i < words.length; i += 50) {
-                const table = createTable(words.slice(i, i + 50), i, i / 50 + 1);
-                tablesContainer.appendChild(table);
-            }
-        }
-
-        fetch('words.json')
-            .then(response => response.json())
-            .then(data => {
-                const words = data.words;
-                populateTables(words);
-            })
-            .catch(error => console.error('Error loading JSON:', error));
-    </script>
+    fetch('words.json')
+        .then(response => response.json())
+        .then(data => {
+            const words = data.words;
+            populateTables(words);
+        })
+        .catch(error => console.error('Error loading JSON:', error));
+</script>
 </body>
 </html>
