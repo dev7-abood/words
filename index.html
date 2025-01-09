@@ -158,8 +158,8 @@
             const tablesContainer = document.getElementById('tablesContainer');
             tablesContainer.innerHTML = ''; // Clear any existing tables
 
-            for (let i = 0; i < words.length; i += 100) {
-                const table = createTable(words.slice(i, i + 100), i, i / 100 + 1);
+            for (let i = 0; i < words.length; i += 50) {
+                const table = createTable(words.slice(i, i + 50), i, i / 50 + 1);
                 tablesContainer.appendChild(table);
             }
         }
